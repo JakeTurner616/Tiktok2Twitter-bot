@@ -10,6 +10,9 @@ ENV ACCESS_TOKEN_SECRET="xxxx"
 # Set environment variable for Discord bot token
 ENV BOT_TOKEN="xxxx"
 
+# Set environment variable for guild IDs
+ENV GUILD_IDS="xxxx,xxxx" 
+
 # Set working directory in the container
 WORKDIR /app
 
