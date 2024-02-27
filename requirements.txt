@@ -1,0 +1,6 @@
+selenium
+discord
+py-cord
+tweepy
+requests
+bs4
