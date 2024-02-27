@@ -1,3 +1,13 @@
+"""
+Discord Bot with TikTok Video Downloader and Twitter Integration
+
+This bot allows users to download TikTok videos and upload them to Twitter with optional captions.
+It also provides functionalites to tweet or reply to tweets with TikTok videos through discord.
+
+Author: Jake Turner
+Date: February 2024
+LICENSE: GNU GPL v3.0
+"""
 import os
 import tweepy
 import requests
@@ -24,11 +34,15 @@ API_KEY = os.getenv("API_KEY")
 API_SECRET = os.getenv("API_SECRET")
 ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
 ACCESS_TOKEN_SECRET = os.getenv("ACCESS_TOKEN_SECRET")
+GUILD_IDS = os.getenv("GUILD_IDS").split(",") if os.getenv("GUILD_IDS") else []
 
 # Function to upload video to Twitter
+
+
 def upload_video_to_twitter(video_path):
     try:
-        auth = tweepy.OAuth1UserHandler(API_KEY, API_SECRET, ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
+        auth = tweepy.OAuth1UserHandler(
+            API_KEY, API_SECRET, ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
         api = tweepy.API(auth)
         media = api.media_upload(video_path, media_category='tweet_video')
         return media.media_id_string
@@ -36,7 +50,7 @@ def upload_video_to_twitter(video_path):
         print("Error uploading video to Twitter:", e)
         return None
 
-# Modified Function to tweet video with option to reply
+# Function to tweet video with option to reply
 def tweet_video(media_id, tweet_text="Uploading a video via Tweepy!", reply_to_tweet_id=None):
     client = tweepy.Client(
         consumer_key=API_KEY,
@@ -48,7 +62,8 @@ def tweet_video(media_id, tweet_text="Uploading a video via Tweepy!", reply_to_t
         tweet_fields = {"media_ids": [media_id]}
         if reply_to_tweet_id:
             # Correctly setting up the dictionary for a reply
-            tweet_fields["in_reply_to_tweet_id"] = reply_to_tweet_id  # Fixed to directly assign the reply ID
+            # Fixed to directly assign the reply ID
+            tweet_fields["in_reply_to_tweet_id"] = reply_to_tweet_id
 
         response = client.create_tweet(text=tweet_text, **tweet_fields)
         if response.data and 'id' in response.data:
@@ -63,16 +78,16 @@ def tweet_video(media_id, tweet_text="Uploading a video via Tweepy!", reply_to_t
         return None
 
 
-
 # Function to download TikTok video
 def download_tiktok_video(tiktok_url):
     chrome_options = Options()
     chrome_options.add_argument("--headless")  # Specifies the headless option
-    chrome_options.add_argument("--disable-gpu")  # Disables GPU hardware acceleration
+    # Disables GPU hardware acceleration
+    chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--no-sandbox")  # Bypass OS security model
-    chrome_options.add_argument("--disable-dev-shm-usage")  # Overcome limited resource problems
-    
-    # Specify the path to chromedriver if it's not in your PATH
+    # Overcome limited resource problems
+    chrome_options.add_argument("--disable-dev-shm-usage")
+
     driver = webdriver.Chrome(options=chrome_options)
     try:
         # Load the webpage
@@ -120,12 +135,13 @@ def download_tiktok_video(tiktok_url):
 @bot.slash_command(
     name="tiktok",
     description="Download a TikTok video and tweet it with an optional caption",
-    guild_ids=[1046653274582958200]
+    guild_ids=GUILD_IDS
 )
 async def tiktok(
     interaction: discord.Interaction,
     tiktok_url: str = Option(description="Enter the TikTok video URL"),
-    caption: str = Option(description="Enter a caption for your tweet", default=None, required=False)
+    caption: str = Option(
+        description="Enter a caption for your tweet", default=None, required=False)
 ):
     # Acknowledge the command
     await interaction.response.defer(ephemeral=False)
@@ -135,7 +151,8 @@ async def tiktok(
         video_path = 'video.mp4'
         media_id = upload_video_to_twitter(video_path)
         if media_id:
-            tweet_text = caption if caption else ""  # Use provided caption or an empty string
+            # Use provided caption or an empty string
+            tweet_text = caption if caption else ""
             tweet_url = tweet_video(media_id, tweet_text)
             if tweet_url:
                 await interaction.followup.send(f"Video uploaded and tweeted successfully! View it at: {tweet_url}")
@@ -150,16 +167,18 @@ async def tiktok(
 @bot.slash_command(
     name="tiktokreply",
     description="Download a TikTok video and reply to a tweet with it",
-    guild_ids=[1046653274582958200]
+    guild_ids=GUILD_IDS
 )
 async def tiktokreply(
     interaction: discord.Interaction,
     tiktok_url: str = Option(description="Enter the TikTok video URL"),
     twitter_url: str = Option(description="Enter the Twitter URL to reply to"),
-    caption: str = Option(description="Enter a caption for your tweet", default="")
+    caption: str = Option(
+        description="Enter a caption for your tweet", default="")
 ):
     # Ensure to respond to acknowledge the command
-    await interaction.response.defer(ephemeral=False)  # Use defer if the operation might take longer
+    # Use defer if the operation might take longer
+    await interaction.response.defer(ephemeral=False)
 
     # Extract Tweet ID from the provided Twitter URL
     tweet_id_match = re.search(r"status/(\d+)", twitter_url)
@@ -175,7 +194,8 @@ async def tiktokreply(
         media_id = upload_video_to_twitter(video_path)
         if media_id:
             tweet_text = caption  # Use provided caption or an empty string
-            tweet_url = tweet_video(media_id, reply_to_tweet_id=tweet_id, tweet_text=tweet_text)
+            tweet_url = tweet_video(
+                media_id, reply_to_tweet_id=tweet_id, tweet_text=tweet_text)
             if tweet_url:
                 await interaction.followup.send(f"Video replied successfully! View it at: {tweet_url}", ephemeral=False)
             else:
@@ -185,18 +205,17 @@ async def tiktokreply(
     else:
         await interaction.followup.send("Failed to download the TikTok video.", ephemeral=False)
 
-#hello world
-        
-@bot.slash_command(name="helloworld", description="hewwo word ;d", guild_ids=[1046653274582958200],)
+# hello world to base slash commands on
+
+@bot.slash_command(name="helloworld", description="Hello world", guild_ids=GUILD_IDS,)
 async def usage(interaction: discord.Interaction):
     # Create the "Command usage" embed
     initial_embed = discord.Embed(
-        title="Command has been sent!",
+        title="Hello world!",
         color=discord.Color.blue()
     )
     # Send the initial "Command usage" embed as a response to the slash command
     await interaction.response.send_message(embed=initial_embed, ephemeral=True)
-
 
 
 # Your Discord bot token
